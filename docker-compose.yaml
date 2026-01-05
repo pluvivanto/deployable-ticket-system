@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    ports:
+      - 15432:5432
+    environment:
+      POSTGRES_USER: exampleuser
+      POSTGRES_PASSWORD: examplepw
+      POSTGRES_DB: ticket_system
+
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    ports:
+      - 18080:8080

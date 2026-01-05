@@ -1,3 +1,16 @@
 spring:
   application:
     name: deployable-ticket-system
+  jpa:
+    database: POSTGRESQL
+    show_sql: true
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate.format_sql: true
+  datasource:
+    platform: postgres
+    url: jdbc:postgresql://localhost:15432/ticket_system
+    username: exampleuser
+    password: examplepw
+    driverClassName: org.postgresql.Driver
