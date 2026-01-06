@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,7 +22,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Entity
 @Getter
 @Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Ticket {
 
   @Id
@@ -56,4 +57,19 @@ public class Ticket {
 
   @UpdateTimestamp
   private Instant updatedAt;
+
+  public Ticket(Event eventId, String grade, Long price, Integer totalQuantity) {
+    this.eventId = eventId;
+    this.grade = grade;
+    this.price = price;
+    this.totalQuantity = totalQuantity;
+    this.remainingQuantity = totalQuantity;
+  }
+
+  public void decreaseRemaining() {
+    if (remainingQuantity <= 0) {
+      throw new IllegalStateException("Not enough remaining quantity: " + remainingQuantity);
+    }
+    this.remainingQuantity--;
+  }
 }
