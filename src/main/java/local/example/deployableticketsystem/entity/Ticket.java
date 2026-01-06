@@ -12,10 +12,16 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
 public class Ticket {
 
   @Id
@@ -38,12 +44,12 @@ public class Ticket {
   @Min(1)
   @Max(10_000)
   @NotNull
-  private Long totalQuantity;
+  private Integer totalQuantity;
 
   @Min(0)
   @Max(10_000)
   @NotNull
-  private Long remainingQuantity;
+  private Integer remainingQuantity;
 
   @CreationTimestamp
   private Instant createdAt;

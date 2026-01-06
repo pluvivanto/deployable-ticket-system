@@ -9,9 +9,13 @@ import jakarta.persistence.ManyToOne;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
+@Setter
+@NoArgsConstructor
 public class Reservation {
 
   @Id
