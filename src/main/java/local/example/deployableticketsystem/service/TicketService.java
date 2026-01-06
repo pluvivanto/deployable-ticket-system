@@ -1,5 +1,6 @@
 package local.example.deployableticketsystem.service;
 
+import jakarta.transaction.Transactional;
 import java.util.UUID;
 import local.example.deployableticketsystem.entity.Reservation;
 import local.example.deployableticketsystem.entity.ReservationStatusEnum;
@@ -22,8 +23,9 @@ public class TicketService {
     this.reservationRepository = reservationRepository;
   }
 
+  @Transactional
   public Boolean reserve(UUID ticketId, String userId) {
-    Ticket ticket = ticketRepository.findById(ticketId)
+    Ticket ticket = ticketRepository.findByIdWithLock(ticketId)
         .orElseThrow(() -> new IllegalArgumentException(
             "Ticket not found"));
     Integer remainingQuantity = ticket.getRemainingQuantity();
@@ -36,8 +38,12 @@ public class TicketService {
     reservation.setTicketId(ticket);
     reservation.setStatus(ReservationStatusEnum.PENDING);
     reservationRepository.save(reservation);
-    ticket.setRemainingQuantity(remainingQuantity - 1);
-    ticketRepository.save(ticket);
+    try {
+      ticket.decreaseRemaining();
+      ticketRepository.save(ticket);
+    } catch (IllegalStateException e) {
+      e.printStackTrace();
+    }
     return true;
   }
 }
