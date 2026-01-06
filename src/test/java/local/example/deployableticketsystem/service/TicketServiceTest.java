@@ -30,6 +30,8 @@ public class TicketServiceTest {
   @Test
   void reserve_withConcurrentRequests_shouldReturnRemaining0() {
     // given
+    int threadCount = 1000;
+
     Event event = new Event();
     event.setTitle("test event title");
     event.setDescription("test event desc");
@@ -37,17 +39,11 @@ public class TicketServiceTest {
     event.setOpenAt(Instant.now());
     eventRepository.save(event);
 
-    Ticket ticket = new Ticket();
-    ticket.setEventId(event);
-    ticket.setGrade("R");
-    ticket.setPrice(1000L);
-    ticket.setTotalQuantity(100);
-    ticket.setRemainingQuantity(100);
+    Ticket ticket = new Ticket(event, "R", 1000L, threadCount);
     Ticket savedTicket = ticketRepository.save(ticket);
     UUID savedTicketId = savedTicket.getId();
 
     // when
-    int threadCount = 100;
     try (ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor()) {
       CountDownLatch latch = new CountDownLatch(threadCount);
       for (int i = 0; i < threadCount; i++) {
