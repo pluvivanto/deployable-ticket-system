@@ -8,6 +8,8 @@ import local.example.deployableticketsystem.repository.TicketRepository;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RDeque;
 import org.redisson.api.RedissonClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Service
 public class TicketService {
 
+  private static final Logger log = LoggerFactory.getLogger(TicketService.class);
   private final TicketRepository ticketRepository;
   private final ReservationRepository reservationRepository;
   private final RedissonClient redisson;
@@ -50,19 +53,19 @@ public class TicketService {
     RDeque<String> queue = redisson.getDeque("reservation_queue");
     String item;
     while ((item = queue.pollFirst()) != null) {
-      String[] parts = item.split(":");
-      UUID ticketId = UUID.fromString(parts[0]);
-      String userId = parts[1];
-
       try {
+        String[] parts = item.split(":");
+        UUID ticketId = UUID.fromString(parts[0]);
+        String userId = parts[1];
         transactionTemplate.executeWithoutResult(status -> {
           Ticket ticket = ticketRepository.getReferenceById(ticketId);
           reservationRepository.save(new Reservation(userId, ticket));
           ticketRepository.decreaseStock(ticketId);
         });
       } catch (Exception e) {
-        System.err.println("Failed to save reservation: " + item);
-        e.printStackTrace();
+        log.error("Failed to process reservation: {}. Moving to tail and pausing.", item, e);
+        queue.addLast(item);
+        break;
       }
     }
   }
