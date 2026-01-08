@@ -8,16 +8,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Getter
-@Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Event {
 
   @Id
@@ -41,4 +40,11 @@ public class Event {
 
   @UpdateTimestamp
   private Instant updatedAt;
+
+  public Event(String title, String description, String location, Instant openAt) {
+    this.title = title;
+    this.description = description;
+    this.location = location;
+    this.openAt = openAt;
+  }
 }

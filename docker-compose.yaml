@@ -14,3 +14,9 @@ services:
     restart: unless-stopped
     ports:
       - 18080:8080
+
+  redis:
+    image: redis:8
+    restart: unless-stopped
+    ports:
+      - 16379:6379

@@ -9,13 +9,12 @@ import jakarta.persistence.ManyToOne;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
-@Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Reservation {
 
   @Id
@@ -35,4 +34,10 @@ public class Reservation {
 
   @CreationTimestamp
   private Instant reservedAt;
+
+  public Reservation(String userId, Ticket ticketId) {
+    this.userId = userId;
+    this.ticketId = ticketId;
+    this.status = ReservationStatusEnum.PENDING;
+  }
 }

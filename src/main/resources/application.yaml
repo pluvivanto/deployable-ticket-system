@@ -14,3 +14,8 @@ spring:
     username: exampleuser
     password: examplepw
     driverClassName: org.postgresql.Driver
+  data:
+    redis:
+      database: 0
+      host: localhost
+      port: 16379

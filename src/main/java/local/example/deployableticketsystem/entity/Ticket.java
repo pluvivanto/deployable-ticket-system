@@ -43,14 +43,14 @@ public class Ticket {
   private Long price; // KRW
 
   @Min(1)
-  @Max(10_000)
+  @Max(1_000_000)
   @NotNull
-  private Integer totalQuantity;
+  private Long totalQuantity;
 
   @Min(0)
-  @Max(10_000)
+  @Max(1_000_000)
   @NotNull
-  private Integer remainingQuantity;
+  private Long remainingQuantity;
 
   @CreationTimestamp
   private Instant createdAt;
@@ -58,18 +58,11 @@ public class Ticket {
   @UpdateTimestamp
   private Instant updatedAt;
 
-  public Ticket(Event eventId, String grade, Long price, Integer totalQuantity) {
+  public Ticket(Event eventId, String grade, Long price, Long totalQuantity) {
     this.eventId = eventId;
     this.grade = grade;
     this.price = price;
     this.totalQuantity = totalQuantity;
     this.remainingQuantity = totalQuantity;
-  }
-
-  public void decreaseRemaining() {
-    if (remainingQuantity <= 0) {
-      throw new IllegalStateException("Not enough remaining quantity: " + remainingQuantity);
-    }
-    this.remainingQuantity--;
   }
 }
