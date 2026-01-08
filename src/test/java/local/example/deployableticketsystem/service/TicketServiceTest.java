@@ -12,10 +12,15 @@ import local.example.deployableticketsystem.entity.Ticket;
 import local.example.deployableticketsystem.repository.EventRepository;
 import local.example.deployableticketsystem.repository.TicketRepository;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.RAtomicLong;
+import org.redisson.api.RDeque;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
+@ActiveProfiles("test")
 public class TicketServiceTest {
 
   @Autowired
@@ -27,30 +32,31 @@ public class TicketServiceTest {
   @Autowired
   private EventRepository eventRepository;
 
+  @Autowired
+  private RedissonClient redisson;
+
   @Test
   void reserve_withConcurrentRequests_shouldReturnRemaining0() {
     // given
-    int threadCount = 1000;
+    long threadCount = 10000L;
 
-    Event event = new Event();
-    event.setTitle("test event title");
-    event.setDescription("test event desc");
-    event.setLocation("test event loc");
-    event.setOpenAt(Instant.now());
+    Event event = new Event("test event title", "test event desc", "test event loc", Instant.now());
     eventRepository.save(event);
 
-    Ticket ticket = new Ticket(event, "R", 1000L, threadCount);
-    Ticket savedTicket = ticketRepository.save(ticket);
-    UUID savedTicketId = savedTicket.getId();
+    Ticket ticket = ticketRepository.save(new Ticket(event, "R", 1000L, threadCount));
+    UUID ticketId = ticket.getId();
+
+    RAtomicLong stock = redisson.getAtomicLong("TICKET" + ticketId);
+    stock.set(threadCount);
 
     // when
     try (ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor()) {
-      CountDownLatch latch = new CountDownLatch(threadCount);
-      for (int i = 0; i < threadCount; i++) {
+      CountDownLatch latch = new CountDownLatch((int) threadCount);
+      for (long i = 0; i < threadCount; i++) {
         String userId = "User-" + i;
         executorService.submit(() -> {
           try {
-            ticketService.reserve(savedTicketId, userId);
+            ticketService.reserve(ticketId, userId);
           } finally {
             latch.countDown();
           }
@@ -61,9 +67,17 @@ public class TicketServiceTest {
       e.printStackTrace();
     }
 
+    RDeque<String> queue = redisson.getDeque("reservation_queue");
+    assertEquals(threadCount, queue.size());
+
+    Ticket intermediateTicket = ticketRepository.findById(ticketId).orElseThrow();
+    assertEquals(threadCount, intermediateTicket.getRemainingQuantity());
+
+    ticketService.consumeReservationQueue();
+
     // then
-    Ticket resultTicket = ticketRepository.findById(savedTicketId).orElseThrow();
-    System.out.println("remaining: " + resultTicket.getRemainingQuantity());
+    assertEquals(0, stock.get());
+    Ticket resultTicket = ticketRepository.findById(ticketId).orElseThrow();
     assertEquals(0, resultTicket.getRemainingQuantity());
   }
 }
