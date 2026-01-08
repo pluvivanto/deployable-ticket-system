@@ -15,6 +15,7 @@ import local.example.deployableticketsystem.entity.Ticket;
 import local.example.deployableticketsystem.repository.ReservationRepository;
 import local.example.deployableticketsystem.repository.TicketRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -55,6 +56,7 @@ class TicketServiceUnitTest {
   }
 
   @Test
+  @DisplayName("reserve should succeed when tickets are available")
   void reserve_shouldDecrementRedisAndPushToQueue() {
     // given
     UUID ticketId = UUID.randomUUID();
@@ -74,6 +76,7 @@ class TicketServiceUnitTest {
   }
 
   @Test
+  @DisplayName("reserve should fail when tickets are sold out")
   void reserve_shouldThrowExceptionAndRevert_whenSoldOut() {
     // given
     UUID ticketId = UUID.randomUUID();
@@ -90,6 +93,7 @@ class TicketServiceUnitTest {
   }
 
   @Test
+  @DisplayName("consumeReservationQueue should save to DB when queue has items")
   void consumeReservationQueue_shouldProcessItemsAndSaveToDB() {
     // given
     UUID ticketId = UUID.randomUUID();
@@ -114,6 +118,7 @@ class TicketServiceUnitTest {
   }
 
   @Test
+  @DisplayName("consumeReservationQueue should do nothing when queue is empty")
   void consumeReservationQueue_shouldDoNothing_whenQueueIsEmpty() {
     // given
     when(redisson.<String>getDeque("reservation_queue")).thenReturn(rDeque);
@@ -125,5 +130,28 @@ class TicketServiceUnitTest {
     // then
     verify(ticketRepository, never()).getReferenceById(any());
     verify(reservationRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("consumeReservationQueue should retry later when DB fails")
+  void consumeReservationQueue_shouldMoveToTailAndBreak_onException() {
+    // given
+    String item1 = UUID.randomUUID() + ":user1";
+    String item2 = UUID.randomUUID() + ":user2";
+
+    when(redisson.<String>getDeque("reservation_queue")).thenReturn(rDeque);
+    when(rDeque.pollFirst()).thenReturn(item1, item2);
+
+    when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus(true));
+    when(ticketRepository.getReferenceById(any())).thenThrow(
+        new RuntimeException("DB Connection Fail"));
+
+    // when
+    ticketService.consumeReservationQueue();
+
+    // then
+    verify(rDeque).addLast(item1);
+    verify(ticketRepository).getReferenceById(any());
+    verify(rDeque, times(1)).pollFirst();
   }
 }
