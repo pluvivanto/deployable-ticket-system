@@ -7,12 +7,15 @@ spring:
       ddl-auto: update
   datasource:
     platform: postgres
-    url: jdbc:postgresql://localhost:15432/ticket_system
-    username: exampleuser
-    password: examplepw
     driverClassName: org.postgresql.Driver
   data:
     redis:
       database: 0
       host: localhost
       port: 16379
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
