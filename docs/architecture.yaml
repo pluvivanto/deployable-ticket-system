@@ -1,0 +1,115 @@
+Diagram:
+  DefinitionFiles:
+    - Type: URL
+      Url: https://raw.githubusercontent.com/awslabs/diagram-as-code/main/definitions/definition-for-aws-icons-light.yaml
+
+  Resources:
+    Canvas:
+      Type: AWS::Diagram::Canvas
+      Children:
+        - User
+        - AWSCloud
+
+    User:
+      Type: AWS::IAM::User
+      Title: "User"
+
+    AWSCloud:
+      Type: AWS::Diagram::Cloud
+      Preset: AWSCloudNoLogo
+      Children:
+        - VPC
+        - Peripherals
+
+    Peripherals:
+      Type: AWS::Diagram::Resource
+      Direction: vertical
+      BorderColor: rgba(0,0,0,0)
+      Children:
+      - ECR
+      - CloudWatch
+      - SecretsManager
+
+    ECR:
+      Type: AWS::ECR
+      Title: "ECR"
+
+    CloudWatch:
+      Type: AWS::CloudWatch
+      Title: "CloudWatch Logs"
+
+    SecretsManager:
+      Type: AWS::SecretsManager
+      Title: "Secrets Manager"
+
+    VPC:
+      Type: AWS::EC2::VPC
+      Title: "VPC"
+      Direction: vertical
+      Children:
+        - PublicSubnet
+        - PrivateSubnet
+
+    PublicSubnet:
+      Type: AWS::EC2::Subnet
+      Title: "Public Subnets"
+      Children:
+        - ALB
+
+    PrivateSubnet:
+      Type: AWS::EC2::Subnet
+      Title: "Private Subnets"
+      Direction: horizontal
+      Children:
+        - ECS
+        - Storage
+
+    ALB:
+      Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+      Title: "ALB"
+
+    ECS:
+      Type: AWS::ECS
+      Title: "ECS\n(Fargate)"
+
+    Storage:
+      Type: AWS::Diagram::Resource
+      BorderColor: rgba(0,0,0,0)
+      Direction: vertical
+      Children:
+        - RDS
+        - ElastiCache
+
+    RDS:
+      Type: AWS::RDS
+      Title: "RDS\n(PostgreSQL)"
+
+    ElastiCache:
+      Type: AWS::ElastiCache
+      Title: "ElastiCache\n(Redis)"
+
+  Links:
+    - Source: User
+      Target: ALB
+      SourcePosition: auto
+      TargetPosition: auto
+      TargetArrowHead:
+            Type: Default
+    - Source: ALB
+      Target: ECS
+      SourcePosition: auto
+      TargetPosition: auto
+      TargetArrowHead:
+            Type: Default
+    - Source: ECS
+      Target: RDS
+      SourcePosition: auto
+      TargetPosition: auto
+      TargetArrowHead:
+            Type: Default
+    - Source: ECS
+      Target: ElastiCache
+      SourcePosition: auto
+      TargetPosition: auto
+      TargetArrowHead:
+            Type: Default
