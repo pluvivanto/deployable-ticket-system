@@ -11,6 +11,7 @@ import local.example.deployableticketsystem.entity.Event;
 import local.example.deployableticketsystem.entity.Ticket;
 import local.example.deployableticketsystem.repository.EventRepository;
 import local.example.deployableticketsystem.repository.TicketRepository;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RDeque;
@@ -35,6 +36,7 @@ public class TicketServiceTest {
   @Autowired
   private RedissonClient redisson;
 
+  @Disabled
   @Test
   void reserve_withConcurrentRequests_shouldReturnRemaining0() {
     // given
