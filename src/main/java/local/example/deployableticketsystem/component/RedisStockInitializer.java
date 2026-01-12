@@ -1,9 +1,10 @@
 package local.example.deployableticketsystem.component;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import local.example.deployableticketsystem.entity.Ticket;
 import local.example.deployableticketsystem.repository.TicketRepository;
-import org.redisson.api.RAtomicLong;
+import local.example.deployableticketsystem.service.TicketService;
 import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,11 +21,14 @@ public class RedisStockInitializer implements CommandLineRunner {
 
   private final TicketRepository ticketRepository;
   private final RedissonClient redissonClient;
+  private final TicketService ticketService;
 
   @Autowired
-  public RedisStockInitializer(TicketRepository ticketRepository, RedissonClient redissonClient) {
+  public RedisStockInitializer(TicketRepository ticketRepository, RedissonClient redissonClient,
+      TicketService ticketService) {
     this.ticketRepository = ticketRepository;
     this.redissonClient = redissonClient;
+    this.ticketService = ticketService;
   }
 
   @Override
@@ -33,7 +37,7 @@ public class RedisStockInitializer implements CommandLineRunner {
     org.redisson.api.RBucket<Boolean> completionFlag = redissonClient.getBucket(
         "stock:initialization:complete");
 
-    if (lock.tryLock(60, 60, java.util.concurrent.TimeUnit.SECONDS)) {
+    if (lock.tryLock(60, 60, TimeUnit.SECONDS)) {
       try {
         if (completionFlag.isExists() && completionFlag.get()) {
           log.info("Stock already initialized by another instance. Skipping.");
@@ -43,12 +47,9 @@ public class RedisStockInitializer implements CommandLineRunner {
         log.info("Acquired initialization lock. Starting Redis stock sync...");
         List<Ticket> tickets = ticketRepository.findAll();
         for (Ticket ticket : tickets) {
-          String key = "TICKET" + ticket.getId();
-          RAtomicLong stock = redissonClient.getAtomicLong(key);
-          stock.set(ticket.getRemainingQuantity());
+          ticketService.syncStock(ticket.getId(), ticket.getRemainingQuantity());
         }
 
-        // Mark as complete so subsequent lock-holders skip
         completionFlag.set(true);
         log.info("Redis stock initialization complete.");
       } finally {

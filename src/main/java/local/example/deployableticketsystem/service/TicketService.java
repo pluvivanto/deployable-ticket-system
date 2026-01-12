@@ -49,6 +49,16 @@ public class TicketService {
     queue.addLast(ticketId + ":" + userId);
   }
 
+  public void syncStock(UUID ticketId, Long quantity) {
+    RAtomicLong stock = redisson.getAtomicLong("TICKET" + ticketId);
+    if (!stock.isExists()) {
+      stock.set(quantity);
+      log.info("Synced stock for ticket {} to {}", ticketId, quantity);
+    } else {
+      log.debug("Stock for ticket {} already exists in Redis. Skipping sync.", ticketId);
+    }
+  }
+
   @Scheduled(fixedDelay = 500)
   public void consumeReservationQueue() {
     RDeque<String> queue = redisson.getDeque("reservation_queue");
