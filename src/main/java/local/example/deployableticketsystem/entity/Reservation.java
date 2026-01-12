@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
@@ -32,6 +33,7 @@ public class Reservation {
   @NotNull
   private Ticket ticketId;
 
+  @Setter
   @NotNull
   private ReservationStatusEnum status;
 

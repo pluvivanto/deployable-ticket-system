@@ -2,6 +2,7 @@ package local.example.deployableticketsystem.service;
 
 import java.util.UUID;
 import local.example.deployableticketsystem.entity.Reservation;
+import local.example.deployableticketsystem.entity.ReservationStatusEnum;
 import local.example.deployableticketsystem.entity.Ticket;
 import local.example.deployableticketsystem.repository.ReservationRepository;
 import local.example.deployableticketsystem.repository.TicketRepository;
@@ -55,13 +56,21 @@ public class TicketService {
     while ((item = queue.pollFirst()) != null) {
       try {
         String[] parts = item.split(":");
+        if (parts.length < 2) {
+          throw new IllegalArgumentException("Invalid message format");
+        }
         UUID ticketId = UUID.fromString(parts[0]);
         String userId = parts[1];
         transactionTemplate.executeWithoutResult(status -> {
           Ticket ticket = ticketRepository.getReferenceById(ticketId);
-          reservationRepository.save(new Reservation(userId, ticket));
+          Reservation reservation = new Reservation(userId, ticket);
+          reservation.setStatus(ReservationStatusEnum.CONFIRMED);
+          reservationRepository.save(reservation);
           ticketRepository.decreaseStock(ticketId);
         });
+      } catch (IllegalArgumentException | IndexOutOfBoundsException e) {
+        log.error("Invalid reservation request format: {}. Discarding.", item, e);
+        // Do not re-queue
       } catch (Exception e) {
         log.error("Failed to process reservation: {}. Moving to tail and pausing.", item, e);
         queue.addLast(item);

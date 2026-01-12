@@ -154,4 +154,22 @@ class TicketServiceUnitTest {
     verify(ticketRepository).getReferenceById(any());
     verify(rDeque, times(1)).pollFirst();
   }
+
+  @Test
+  @DisplayName("consumeReservationQueue should discard poison pill (invalid format)")
+  void consumeReservationQueue_shouldDiscardPoisonPill() {
+    // given
+    String badItem = "invalid-format-string";
+
+    when(redisson.<String>getDeque("reservation_queue")).thenReturn(rDeque);
+    when(rDeque.pollFirst()).thenReturn(badItem, (String) null);
+
+    // when
+    ticketService.consumeReservationQueue();
+
+    // then
+    verify(rDeque, never()).addLast(badItem);
+    verify(ticketRepository, never()).getReferenceById(any());
+    verify(rDeque, times(2)).pollFirst();
+  }
 }
